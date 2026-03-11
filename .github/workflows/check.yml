@@ -1,0 +1,7 @@
+name: Check Nix
+
+on: [push]
+
+jobs:
+  check-rust:
+    uses: mikojs/actions/.github/workflows/check-rust.yml@main
