@@ -1,5 +1,5 @@
 {
-  description = "";
+  description = "This library provides a simple interface to work with Notion pages, databases, and data sources while enforcing configurable permissions.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
