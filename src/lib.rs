@@ -30,13 +30,19 @@ pub enum NotionError {
 #[derive(Clone)]
 pub struct Notion {
     token: String,
+    config: Config,
 }
 
 impl Notion {
     pub fn new() -> Result<Notion, NotionError> {
         Ok(Self {
             token: env::var("NOTION_TOKEN").map_err(|_| NotionError::NotionTokenNotSet)?,
+            config: Config::new()?,
         })
+    }
+
+    pub fn list(&self) -> Vec<String> {
+        self.config.get_names()
     }
 
     async fn format_title(&self, data: &Value) -> Result<Value, NotionError> {
@@ -102,7 +108,7 @@ impl Notion {
         data_source_name_or_id: &str,
         filter: &Value,
     ) -> Result<Vec<Value>, NotionError> {
-        let data_source_id = Config::new()?.get_id(
+        let data_source_id = self.config.get_id(
             data_source_name_or_id,
             NotionType::DataSource,
             &Permission::Get,
@@ -135,7 +141,8 @@ impl Notion {
 
     pub async fn get_database(&self, database_name_or_id: &str) -> Result<Value, NotionError> {
         let database_id =
-            Config::new()?.get_id(database_name_or_id, NotionType::Database, &Permission::Get)?;
+            self.config
+                .get_id(database_name_or_id, NotionType::Database, &Permission::Get)?;
         let client = reqwest::Client::new();
         let res = client
             .get(format!("https://api.notion.com/v1/databases/{database_id}",))
@@ -165,7 +172,8 @@ impl Notion {
         let data = res.json::<Value>().await?;
 
         if !data["id"].is_string()
-            || Config::new()?
+            || self
+                .config
                 .check_parent(data.clone(), &Permission::Get)
                 .is_err()
         {
@@ -176,7 +184,8 @@ impl Notion {
     }
 
     pub async fn add_page(&self, value: Value) -> Result<(), NotionError> {
-        if Config::new()?
+        if self
+            .config
             .check_parent(value.clone(), &Permission::Add)
             .is_err()
         {
@@ -204,7 +213,8 @@ impl Notion {
     pub async fn update_page(&self, page_id: &str, value: Value) -> Result<(), NotionError> {
         let page = self.get_page(page_id).await?;
 
-        if Config::new()?
+        if self
+            .config
             .check_parent(page.clone(), &Permission::Update)
             .is_err()
         {

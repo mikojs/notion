@@ -32,7 +32,7 @@ pub struct NotionConfig {
     pub permission: Vec<Permission>,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Config(Vec<NotionConfig>);
 
 impl Config {
@@ -46,6 +46,10 @@ impl Config {
         let config: Vec<NotionConfig> = serde_json::from_str(&config_str).unwrap_or_default();
 
         Ok(Self(config))
+    }
+
+    pub fn get_names(&self) -> Vec<String> {
+        self.0.iter().map(|c| c.name.clone()).collect()
     }
 
     pub fn get_id(

@@ -76,6 +76,15 @@ impl NotionServer {
         }
     }
 
+    #[tool(description = "List all Notion names")]
+    async fn list(&self) -> Result<CallToolResult, McpError> {
+        let notion = self.notion.lock().await;
+
+        Ok(CallToolResult::success(vec![Content::json(
+            serde_json::json!({ "results": notion.list() }),
+        )?]))
+    }
+
     #[tool(description = "Query data sources from Notion with optional filter")]
     async fn get_data_sources(
         &self,
@@ -159,7 +168,7 @@ impl ServerHandler for NotionServer {
             .with_server_info(Implementation::from_build_env())
             .with_instructions(
                 "Notion MCP Server - Access Notion databases, pages, and data sources. \
-                Tools: get_data_sources, get_database, get_page, add_page, update_page."
+                Tools: list, get_data_sources, get_database, get_page, add_page, update_page."
                     .to_string(),
             )
     }
