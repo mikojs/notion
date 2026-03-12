@@ -21,19 +21,19 @@ pub enum Permission {
 }
 
 #[derive(Default, Clone)]
-pub struct DatasourceConfig {
+pub struct DataSourceConfig {
     pub name: String,
     pub id: Option<String>,
     pub permission: Option<Permission>,
 }
 
 #[derive(Default)]
-pub struct Config(Vec<DatasourceConfig>);
+pub struct Config(Vec<DataSourceConfig>);
 
 impl Config {
     pub fn new() -> Result<Self, ConfigError> {
-        let mut datasource_configs: Vec<DatasourceConfig> = Vec::new();
-        let datasource_parttern =
+        let mut data_source_configs: Vec<DataSourceConfig> = Vec::new();
+        let data_source_parttern =
             Regex::new(r"^NOTION_DATABASE_(?<name>\w+)_(?<type>ID|PERMISSION)$")?;
 
         for (key, value) in env::vars() {
@@ -41,33 +41,33 @@ impl Config {
                 continue;
             }
 
-            if let Some(caps) = datasource_parttern.captures(&key) {
+            if let Some(caps) = data_source_parttern.captures(&key) {
                 let name = caps["name"].replace("_", "-").to_lowercase();
                 let r#type = caps["type"].to_string();
 
-                if let Some(index) = datasource_configs.iter().position(|c| c.name == name) {
+                if let Some(index) = data_source_configs.iter().position(|c| c.name == name) {
                     Config::update_db_config_with_type(
-                        &mut datasource_configs[index],
+                        &mut data_source_configs[index],
                         r#type,
                         value,
                     )?;
                 } else {
-                    let mut db_config = DatasourceConfig {
+                    let mut db_config = DataSourceConfig {
                         name,
                         ..Default::default()
                     };
 
                     Config::update_db_config_with_type(&mut db_config, r#type, value)?;
-                    datasource_configs.push(db_config);
+                    data_source_configs.push(db_config);
                 }
             };
         }
 
-        Ok(Self(datasource_configs))
+        Ok(Self(data_source_configs))
     }
 
     fn update_db_config_with_type(
-        db_config: &mut DatasourceConfig,
+        db_config: &mut DataSourceConfig,
         r#type: String,
         value: String,
     ) -> Result<(), ConfigError> {
@@ -77,9 +77,5 @@ impl Config {
             _ => unreachable!("unknown type {}", r#type),
         }
         Ok(())
-    }
-
-    pub fn list(&self) -> Vec<DatasourceConfig> {
-        self.0.clone()
     }
 }
