@@ -1,6 +1,7 @@
 use std::{env, str::FromStr};
 
 use regex::{Error as RegexError, Regex};
+use serde_json::Value;
 use strum::ParseError as StrumParseError;
 use strum_macros::EnumString;
 use thiserror::Error;
@@ -116,6 +117,32 @@ impl Config {
             Ok(id)
         } else {
             Err(ConfigError::NotFound)
+        }
+    }
+
+    pub fn check_parent(&self, value: Value, permission: &Permission) -> Result<(), ConfigError> {
+        let parent = value["parent"].as_object().ok_or(ConfigError::NotFound)?;
+
+        match parent["type"].as_str() {
+            Some("data_source_id") => self
+                .get_id(
+                    parent["data_source_id"]
+                        .as_str()
+                        .ok_or(ConfigError::NotFound)?,
+                    NotionType::DataSource,
+                    permission,
+                )
+                .map(|_| ()),
+            Some("database_id") => self
+                .get_id(
+                    parent["database_id"]
+                        .as_str()
+                        .ok_or(ConfigError::NotFound)?,
+                    NotionType::Database,
+                    permission,
+                )
+                .map(|_| ()),
+            _ => Err(ConfigError::NotFound),
         }
     }
 }

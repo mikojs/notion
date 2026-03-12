@@ -164,7 +164,11 @@ impl Notion {
             .await?;
         let data = res.json::<Value>().await?;
 
-        if !data["id"].is_string() {
+        if !data["id"].is_string()
+            || Config::new()?
+                .check_parent(data.clone(), &Permission::Get)
+                .is_err()
+        {
             return Err(NotionError::GetFail("Page".to_string()));
         }
 
@@ -172,6 +176,13 @@ impl Notion {
     }
 
     pub async fn add_page(&self, value: Value) -> Result<(), NotionError> {
+        if Config::new()?
+            .check_parent(value.clone(), &Permission::Add)
+            .is_err()
+        {
+            return Err(NotionError::AddFail("Page".to_string()));
+        }
+
         let client = reqwest::Client::new();
         let res = client
             .post("https://api.notion.com/v1/pages")
@@ -191,6 +202,15 @@ impl Notion {
     }
 
     pub async fn update_page(&self, page_id: &str, value: Value) -> Result<(), NotionError> {
+        let page = self.get_page(page_id).await?;
+
+        if Config::new()?
+            .check_parent(page.clone(), &Permission::Update)
+            .is_err()
+        {
+            return Err(NotionError::UpdateFail("Page".to_string()));
+        }
+
         let client = reqwest::Client::new();
         let res = client
             .patch(format!("https://api.notion.com/v1/pages/{page_id}",))
