@@ -4,6 +4,8 @@ use reqwest::Error as ReqwestError;
 use serde_json::Value;
 use thiserror::Error;
 
+mod config;
+
 #[derive(Error, Debug)]
 pub enum NotionError {
     #[error("ReqwestError: {0}")]
