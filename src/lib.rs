@@ -1,5 +1,6 @@
 use std::env::{self, VarError};
 
+use config::{Config, ConfigError, Permission};
 use reqwest::Error as ReqwestError;
 use serde_json::Value;
 use thiserror::Error;
@@ -12,6 +13,8 @@ pub enum NotionError {
     Reqwest(#[from] ReqwestError),
     #[error("VarError: {0}")]
     Var(#[from] VarError),
+    #[error("ConfigError: {0}")]
+    Config(#[from] ConfigError),
     #[error("NoData: {0}")]
     NoData(String),
     #[error("AddFail: {0}")]
@@ -109,9 +112,11 @@ impl Notion {
 
     pub async fn get_data_sources(
         &self,
-        data_source_id: &str,
+        data_source_name_or_id: &str,
         filter: &Value,
     ) -> Result<Vec<Value>, NotionError> {
+        let data_source_id =
+            Config::new()?.get_data_source_id(data_source_name_or_id, &Permission::Get)?;
         let client = reqwest::Client::new();
         let res = client
             .post(format!(
@@ -138,7 +143,8 @@ impl Notion {
         Ok(output)
     }
 
-    pub async fn get_database(&self, database_id: &str) -> Result<Value, NotionError> {
+    pub async fn get_database(&self, database_name_or_id: &str) -> Result<Value, NotionError> {
+        let database_id = Config::new()?.get_database_id(database_name_or_id, &Permission::Get)?;
         let client = reqwest::Client::new();
         let res = client
             .get(format!("https://api.notion.com/v1/databases/{database_id}",))

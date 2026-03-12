@@ -4,6 +4,7 @@ use regex::{Error as RegexError, Regex};
 use strum::ParseError as StrumParseError;
 use strum_macros::EnumString;
 use thiserror::Error;
+use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
@@ -11,16 +12,18 @@ pub enum ConfigError {
     Regex(#[from] RegexError),
     #[error("ParseError: {0}")]
     StrumParse(#[from] StrumParseError),
+    #[error("NotFound")]
+    NotFound,
 }
 
-#[derive(EnumString, Clone)]
+#[derive(EnumString, Clone, PartialEq)]
 pub enum Permission {
     Get,
     Update,
     Add,
 }
 
-#[derive(EnumString, Default, Clone)]
+#[derive(EnumString, Default, Clone, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 pub enum NotionType {
     #[default]
@@ -33,7 +36,7 @@ pub struct NotionConfig {
     pub name: String,
     pub r#type: NotionType,
     pub id: Option<String>,
-    pub permission: Option<Permission>,
+    pub permission: Vec<Permission>,
 }
 
 #[derive(Default)]
@@ -85,9 +88,63 @@ impl Config {
     ) -> Result<(), ConfigError> {
         match attr.as_ref() {
             "ID" => notion_config.id = Some(value),
-            "PERMISSION" => notion_config.permission = Some(Permission::from_str(&value)?),
+            "PERMISSION" => notion_config.permission.push(Permission::from_str(&value)?),
             _ => unreachable!("unknown type {}", attr),
         }
         Ok(())
+    }
+
+    pub fn get_data_source_id(
+        &self,
+        name_or_id: &str,
+        permission: &Permission,
+    ) -> Result<String, ConfigError> {
+        let id = self
+            .0
+            .iter()
+            .find_map(|c| {
+                if c.name == name_or_id
+                    && c.r#type == NotionType::DataSource
+                    && c.permission.contains(permission)
+                {
+                    c.id.clone()
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(name_or_id.to_string());
+
+        if Uuid::parse_str(&id).is_ok() {
+            Ok(id)
+        } else {
+            Err(ConfigError::NotFound)
+        }
+    }
+
+    pub fn get_database_id(
+        &self,
+        name_or_id: &str,
+        permission: &Permission,
+    ) -> Result<String, ConfigError> {
+        let id = self
+            .0
+            .iter()
+            .find_map(|c| {
+                if c.name == name_or_id
+                    && c.r#type == NotionType::Database
+                    && c.permission.contains(permission)
+                {
+                    c.id.clone()
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(name_or_id.to_string());
+
+        if Uuid::parse_str(&id).is_ok() {
+            Ok(id)
+        } else {
+            Err(ConfigError::NotFound)
+        }
     }
 }
