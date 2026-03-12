@@ -76,12 +76,12 @@ impl NotionServer {
         }
     }
 
-    #[tool(description = "List all Notion names")]
-    async fn list(&self) -> Result<CallToolResult, McpError> {
+    #[tool(description = "List all Notion databases and data sources with their permissions")]
+    async fn get_list(&self) -> Result<CallToolResult, McpError> {
         let notion = self.notion.lock().await;
 
         Ok(CallToolResult::success(vec![Content::json(
-            serde_json::json!({ "results": notion.list() }),
+            notion.get_list(),
         )?]))
     }
 

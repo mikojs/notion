@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::env::{self, VarError};
 use thiserror::Error;
 
-use crate::config::{Config, ConfigError, NotionType, Permission};
+use crate::config::{Config, ConfigError, NotionInfo, NotionType, Permission};
 
 mod config;
 
@@ -41,8 +41,8 @@ impl Notion {
         })
     }
 
-    pub fn list(&self) -> Vec<String> {
-        self.config.get_names()
+    pub fn get_list(&self) -> Vec<NotionInfo> {
+        self.config.get_list()
     }
 
     async fn format_title(&self, data: &Value) -> Result<Value, NotionError> {

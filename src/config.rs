@@ -1,6 +1,6 @@
 use std::{env, fs, path::PathBuf};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -10,14 +10,14 @@ pub enum ConfigError {
     NotFound,
 }
 
-#[derive(Deserialize, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 pub enum Permission {
     Get,
     Update,
     Add,
 }
 
-#[derive(Deserialize, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 pub enum NotionType {
     DataSource,
     Database,
@@ -26,6 +26,13 @@ pub enum NotionType {
 #[derive(Deserialize, Clone)]
 pub struct NotionConfig {
     pub id: String,
+    pub name: String,
+    pub r#type: NotionType,
+    pub permission: Vec<Permission>,
+}
+
+#[derive(Serialize)]
+pub struct NotionInfo {
     pub name: String,
     pub r#type: NotionType,
     pub permission: Vec<Permission>,
@@ -47,8 +54,15 @@ impl Config {
         Ok(Self(config))
     }
 
-    pub fn get_names(&self) -> Vec<String> {
-        self.0.iter().map(|c| c.name.clone()).collect()
+    pub fn get_list(&self) -> Vec<NotionInfo> {
+        self.0
+            .iter()
+            .map(|c| NotionInfo {
+                name: c.name.clone(),
+                r#type: c.r#type.clone(),
+                permission: c.permission.clone(),
+            })
+            .collect()
     }
 
     pub fn get_id(
