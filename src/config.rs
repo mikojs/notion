@@ -1,9 +1,8 @@
 use std::{env, fs, path::PathBuf};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
-use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
@@ -11,14 +10,14 @@ pub enum ConfigError {
     NotFound,
 }
 
-#[derive(Deserialize, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 pub enum Permission {
     Get,
     Update,
     Add,
 }
 
-#[derive(Deserialize, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 pub enum NotionType {
     DataSource,
     Database,
@@ -26,13 +25,20 @@ pub enum NotionType {
 
 #[derive(Deserialize, Clone)]
 pub struct NotionConfig {
-    pub id: Option<String>,
+    pub id: String,
     pub name: String,
     pub r#type: NotionType,
     pub permission: Vec<Permission>,
 }
 
-#[derive(Default)]
+#[derive(Serialize)]
+pub struct NotionInfo {
+    pub name: String,
+    pub r#type: NotionType,
+    pub permission: Vec<Permission>,
+}
+
+#[derive(Default, Clone)]
 pub struct Config(Vec<NotionConfig>);
 
 impl Config {
@@ -48,29 +54,36 @@ impl Config {
         Ok(Self(config))
     }
 
+    pub fn get_list(&self) -> Vec<NotionInfo> {
+        self.0
+            .iter()
+            .map(|c| NotionInfo {
+                name: c.name.clone(),
+                r#type: c.r#type.clone(),
+                permission: c.permission.clone(),
+            })
+            .collect()
+    }
+
     pub fn get_id(
         &self,
         name_or_id: &str,
         r#type: NotionType,
         permission: &Permission,
     ) -> Result<String, ConfigError> {
-        let id = self
-            .0
+        self.0
             .iter()
             .find_map(|c| {
-                if c.name == name_or_id && c.r#type == r#type && c.permission.contains(permission) {
-                    c.id.clone()
+                if (c.id == name_or_id || c.name == name_or_id)
+                    && c.r#type == r#type
+                    && c.permission.contains(permission)
+                {
+                    Some(c.id.clone())
                 } else {
                     None
                 }
             })
-            .unwrap_or(name_or_id.to_string());
-
-        if Uuid::parse_str(&id).is_ok() {
-            Ok(id)
-        } else {
-            Err(ConfigError::NotFound)
-        }
+            .ok_or(ConfigError::NotFound)
     }
 
     pub fn check_parent(&self, value: Value, permission: &Permission) -> Result<(), ConfigError> {
