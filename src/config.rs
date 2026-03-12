@@ -20,61 +20,73 @@ pub enum Permission {
     Add,
 }
 
+#[derive(EnumString, Default, Clone)]
+#[strum(serialize_all = "snake_case")]
+pub enum NotionType {
+    #[default]
+    DataSource,
+    Database,
+}
+
 #[derive(Default, Clone)]
-pub struct DataSourceConfig {
+pub struct NotionConfig {
     pub name: String,
+    pub r#type: NotionType,
     pub id: Option<String>,
     pub permission: Option<Permission>,
 }
 
 #[derive(Default)]
-pub struct Config(Vec<DataSourceConfig>);
+pub struct Config(Vec<NotionConfig>);
 
 impl Config {
     pub fn new() -> Result<Self, ConfigError> {
-        let mut data_source_configs: Vec<DataSourceConfig> = Vec::new();
-        let data_source_parttern =
-            Regex::new(r"^NOTION_DATABASE_(?<name>\w+)_(?<type>ID|PERMISSION)$")?;
+        let mut notion_configs: Vec<NotionConfig> = Vec::new();
+        let notion_parttern = Regex::new(
+            r"^NOTION_(?<type>DATABASE|DATA_SOURCE)_(?<name>\w+)_(?<attr>ID|PERMISSION)$",
+        )?;
 
         for (key, value) in env::vars() {
             if value.is_empty() {
                 continue;
             }
 
-            if let Some(caps) = data_source_parttern.captures(&key) {
+            if let Some(caps) = notion_parttern.captures(&key) {
                 let name = caps["name"].replace("_", "-").to_lowercase();
-                let r#type = caps["type"].to_string();
+                let r#type = caps["type"].replace("_", "-").to_lowercase();
+                let attr = caps["attr"].to_string();
 
-                if let Some(index) = data_source_configs.iter().position(|c| c.name == name) {
-                    Config::update_db_config_with_type(
-                        &mut data_source_configs[index],
-                        r#type,
+                if let Some(index) = notion_configs.iter().position(|c| c.name == name) {
+                    Config::update_notion_config_with_type(
+                        &mut notion_configs[index],
+                        attr,
                         value,
                     )?;
                 } else {
-                    let mut db_config = DataSourceConfig {
+                    let mut notion_config = NotionConfig {
                         name,
+                        r#type: NotionType::from_str(&r#type)?,
                         ..Default::default()
                     };
 
-                    Config::update_db_config_with_type(&mut db_config, r#type, value)?;
-                    data_source_configs.push(db_config);
+                    Config::update_notion_config_with_type(&mut notion_config, attr, value)?;
+                    notion_configs.push(notion_config);
                 }
             };
         }
 
-        Ok(Self(data_source_configs))
+        Ok(Self(notion_configs))
     }
 
-    fn update_db_config_with_type(
-        db_config: &mut DataSourceConfig,
-        r#type: String,
+    fn update_notion_config_with_type(
+        notion_config: &mut NotionConfig,
+        attr: String,
         value: String,
     ) -> Result<(), ConfigError> {
-        match r#type.as_ref() {
-            "ID" => db_config.id = Some(value),
-            "PERMISSION" => db_config.permission = Some(Permission::from_str(&value)?),
-            _ => unreachable!("unknown type {}", r#type),
+        match attr.as_ref() {
+            "ID" => notion_config.id = Some(value),
+            "PERMISSION" => notion_config.permission = Some(Permission::from_str(&value)?),
+            _ => unreachable!("unknown type {}", attr),
         }
         Ok(())
     }
