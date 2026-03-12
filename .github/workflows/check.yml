@@ -5,3 +5,5 @@ on: [push]
 jobs:
   check-rust:
     uses: mikojs/actions/.github/workflows/check-rust.yml@main
+  check-nix:
+    uses: mikojs/actions/.github/workflows/check-nix.yml@main
