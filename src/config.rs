@@ -94,46 +94,17 @@ impl Config {
         Ok(())
     }
 
-    pub fn get_data_source_id(
+    pub fn get_id(
         &self,
         name_or_id: &str,
+        r#type: NotionType,
         permission: &Permission,
     ) -> Result<String, ConfigError> {
         let id = self
             .0
             .iter()
             .find_map(|c| {
-                if c.name == name_or_id
-                    && c.r#type == NotionType::DataSource
-                    && c.permission.contains(permission)
-                {
-                    c.id.clone()
-                } else {
-                    None
-                }
-            })
-            .unwrap_or(name_or_id.to_string());
-
-        if Uuid::parse_str(&id).is_ok() {
-            Ok(id)
-        } else {
-            Err(ConfigError::NotFound)
-        }
-    }
-
-    pub fn get_database_id(
-        &self,
-        name_or_id: &str,
-        permission: &Permission,
-    ) -> Result<String, ConfigError> {
-        let id = self
-            .0
-            .iter()
-            .find_map(|c| {
-                if c.name == name_or_id
-                    && c.r#type == NotionType::Database
-                    && c.permission.contains(permission)
-                {
+                if c.name == name_or_id && c.r#type == r#type && c.permission.contains(permission) {
                     c.id.clone()
                 } else {
                     None

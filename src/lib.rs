@@ -1,9 +1,9 @@
-use std::env::{self, VarError};
-
-use config::{Config, ConfigError, Permission};
 use reqwest::Error as ReqwestError;
 use serde_json::Value;
+use std::env::{self, VarError};
 use thiserror::Error;
+
+use crate::config::{Config, ConfigError, NotionType, Permission};
 
 mod config;
 
@@ -102,8 +102,11 @@ impl Notion {
         data_source_name_or_id: &str,
         filter: &Value,
     ) -> Result<Vec<Value>, NotionError> {
-        let data_source_id =
-            Config::new()?.get_data_source_id(data_source_name_or_id, &Permission::Get)?;
+        let data_source_id = Config::new()?.get_id(
+            data_source_name_or_id,
+            NotionType::DataSource,
+            &Permission::Get,
+        )?;
         let client = reqwest::Client::new();
         let res = client
             .post(format!(
@@ -131,7 +134,8 @@ impl Notion {
     }
 
     pub async fn get_database(&self, database_name_or_id: &str) -> Result<Value, NotionError> {
-        let database_id = Config::new()?.get_database_id(database_name_or_id, &Permission::Get)?;
+        let database_id =
+            Config::new()?.get_id(database_name_or_id, NotionType::Database, &Permission::Get)?;
         let client = reqwest::Client::new();
         let res = client
             .get(format!("https://api.notion.com/v1/databases/{database_id}",))
