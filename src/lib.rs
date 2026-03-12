@@ -15,8 +15,6 @@ pub enum NotionError {
     Var(#[from] VarError),
     #[error("ConfigError: {0}")]
     Config(#[from] ConfigError),
-    #[error("NoData: {0}")]
-    NoData(String),
     #[error("AddFail: {0}")]
     AddFail(String),
     #[error("GetFail: {0}")]
@@ -48,10 +46,7 @@ impl Notion {
         } else if let Some(title_array) = data["title"].as_array() {
             title_array
         } else {
-            return Err(NotionError::TitleParseFail(format!(
-                "doesn't have title: {}",
-                data
-            )));
+            return Err(NotionError::TitleParseFail("Title not found".to_string()));
         };
 
         if title_array.len() == 1 {
@@ -62,13 +57,9 @@ impl Notion {
             for title_item in title_array {
                 match title_item["type"].as_str() {
                     Some("text") => {
-                        title +=
-                            title_item["plain_text"]
-                                .as_str()
-                                .ok_or(NotionError::TitleParseFail(format!(
-                                    "parse failed: {}",
-                                    title_item
-                                )))?
+                        title += title_item["plain_text"]
+                            .as_str()
+                            .ok_or(NotionError::TitleParseFail("Not plain text".to_string()))?
                     }
                     Some("mention") => {
                         let page_result =
@@ -79,18 +70,14 @@ impl Notion {
                             {
                                 self.get_database(database_id).await
                             } else {
-                                return Err(NotionError::TitleParseFail(format!(
-                                    "parse failed: {}",
-                                    title_item
-                                )));
+                                return Err(NotionError::TitleParseFail(
+                                    "Not found database".to_string(),
+                                ));
                             };
 
                         if let Ok(page) = page_result {
                             title += Box::pin(self.format_title(&page)).await?.as_str().ok_or(
-                                NotionError::TitleParseFail(format!(
-                                    "couldn't get the title: {}",
-                                    title_item
-                                )),
+                                NotionError::TitleParseFail("Not found page's Title".to_string()),
                             )?;
                         } else {
                             title += "[Permission denied page]";
@@ -99,7 +86,7 @@ impl Notion {
                     }
                     e => {
                         return Err(NotionError::TitleParseFail(format!(
-                            "doesn't support: {:?}",
+                            "Doesn't support: {:?}",
                             e
                         )));
                     }
@@ -131,7 +118,7 @@ impl Notion {
         let data = res.json::<Value>().await?;
         let results = match data["results"].as_array() {
             Some(results) => results.to_vec(),
-            None => return Err(NotionError::NoData(data.to_string())),
+            None => return Err(NotionError::GetFail("Data Source".to_string())),
         };
         let mut output = vec![];
 
@@ -156,7 +143,7 @@ impl Notion {
         let data = res.json::<Value>().await?;
 
         if !data["id"].is_string() {
-            return Err(NotionError::GetFail(format!("data: {}", data)));
+            return Err(NotionError::GetFail("Database".to_string()));
         }
 
         Ok(data)
@@ -174,7 +161,7 @@ impl Notion {
         let data = res.json::<Value>().await?;
 
         if !data["id"].is_string() {
-            return Err(NotionError::GetFail(format!("data: {}", data)));
+            return Err(NotionError::GetFail("Page".to_string()));
         }
 
         Ok(data)
@@ -193,10 +180,7 @@ impl Notion {
         let data = res.json::<Value>().await?;
 
         if !data["id"].is_string() {
-            return Err(NotionError::AddFail(format!(
-                "data: {}, value: {}",
-                data, value
-            )));
+            return Err(NotionError::AddFail("Page".to_string()));
         }
 
         Ok(())
@@ -215,10 +199,7 @@ impl Notion {
         let data = res.json::<Value>().await?;
 
         if !data["id"].is_string() {
-            return Err(NotionError::UpdateFail(format!(
-                "data: {}, value: {}",
-                data, value
-            )));
+            return Err(NotionError::UpdateFail("Page".to_string()));
         }
 
         Ok(())
