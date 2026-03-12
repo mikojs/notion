@@ -3,7 +3,6 @@ use std::{env, fs, path::PathBuf};
 use serde::Deserialize;
 use serde_json::Value;
 use thiserror::Error;
-use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
@@ -26,7 +25,7 @@ pub enum NotionType {
 
 #[derive(Deserialize, Clone)]
 pub struct NotionConfig {
-    pub id: Option<String>,
+    pub id: String,
     pub name: String,
     pub r#type: NotionType,
     pub permission: Vec<Permission>,
@@ -58,23 +57,19 @@ impl Config {
         r#type: NotionType,
         permission: &Permission,
     ) -> Result<String, ConfigError> {
-        let id = self
-            .0
+        self.0
             .iter()
             .find_map(|c| {
-                if c.name == name_or_id && c.r#type == r#type && c.permission.contains(permission) {
-                    c.id.clone()
+                if (c.id == name_or_id || c.name == name_or_id)
+                    && c.r#type == r#type
+                    && c.permission.contains(permission)
+                {
+                    Some(c.id.clone())
                 } else {
                     None
                 }
             })
-            .unwrap_or(name_or_id.to_string());
-
-        if Uuid::parse_str(&id).is_ok() {
-            Ok(id)
-        } else {
-            Err(ConfigError::NotFound)
-        }
+            .ok_or(ConfigError::NotFound)
     }
 
     pub fn check_parent(&self, value: Value, permission: &Permission) -> Result<(), ConfigError> {
