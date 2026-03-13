@@ -149,3 +149,42 @@ use serde_json::json;
 let filter = json!({});
 let results = client.get_data_sources("my-data-source", &filter).await?;
 ```
+
+## Testing
+
+Enable the `test-utils` feature to use `MockNotion` for testing:
+
+```toml
+[dev-dependencies]
+notion = { git = "https://github.com/mikojs/notion", features = ["test-utils"] }
+```
+
+### Example
+
+```rust
+use notion::{NotionTrait, mock::MockNotion};
+use serde_json::json;
+
+#[tokio::test]
+async fn test_get_list() {
+    let mock = MockNotion::new();
+
+    mock.mock_get_list(|| vec![]).await;
+
+    let result = mock.get_list();
+    assert!(result.is_empty());
+}
+
+#[tokio::test]
+async fn test_get_page() {
+    let mock = MockNotion::new();
+
+    mock.mock_get_page(|| Ok(json!({
+        "id": "test-page-id",
+        "properties": {}
+    }))).await;
+
+    let result = mock.get_page("any-id").await.unwrap();
+    assert_eq!(result["id"], "test-page-id");
+}
+```

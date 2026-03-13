@@ -1,6 +1,6 @@
 #[cfg(feature = "mcp")]
 mod mcp {
-    use notion::{Notion, NotionError};
+    use notion::{Notion, NotionError, NotionTrait};
     use rmcp::{
         ErrorData as McpError, RmcpError, ServerHandler, ServiceExt,
         handler::server::{router::tool::ToolRouter, wrapper::Parameters},
