@@ -26,7 +26,7 @@ impl Default for MockNotion {
 impl MockNotion {
     pub fn new() -> Self {
         Self {
-            get_list_fn: Arc::new(Mutex::new(Box::new(|| vec![]))),
+            get_list_fn: Arc::new(Mutex::new(Box::new(Vec::new))),
             get_data_sources_fn: Arc::new(Mutex::new(Box::new(|| Ok(vec![])))),
             get_database_fn: Arc::new(Mutex::new(Box::new(|| {
                 Err(NotionError::GetFail("Not mocked".to_string()))

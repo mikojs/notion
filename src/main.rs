@@ -176,7 +176,6 @@ mod mcp {
         }
     }
 
-    #[allow(clippy::result_large_err)]
     pub async fn run() -> Result<(), ServerError> {
         let notion = Notion::new()?;
         let server = NotionServer::new(notion);
@@ -190,6 +189,7 @@ mod mcp {
 }
 
 #[cfg(feature = "mcp")]
+#[allow(clippy::result_large_err)]
 #[tokio::main]
 async fn main() -> Result<(), mcp::ServerError> {
     mcp::run().await
