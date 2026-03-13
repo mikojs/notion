@@ -9,7 +9,7 @@ This library provides a simple interface to work with Notion pages, databases, a
 ### Cargo
 
 ```
-cargo install --path .
+cargo install --path . --features mcp
 ```
 
 It could also use as the dependency in your project. Add to your `Cargo.toml`:

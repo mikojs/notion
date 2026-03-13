@@ -30,6 +30,10 @@
               version = "0.1.0";
               src = ./.;
               cargoLock.lockFile = ./Cargo.lock;
+
+              buildFeatures = [
+                "mcp"
+              ];
             };
 
             default = self'.packages.miko-notion;
