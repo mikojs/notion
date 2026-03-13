@@ -1,11 +1,30 @@
+use async_trait::async_trait;
 use reqwest::Error as ReqwestError;
 use serde_json::Value;
 use std::env::{self, VarError};
 use thiserror::Error;
 
-use crate::config::{Config, ConfigError, NotionInfo, NotionType, Permission};
+pub use crate::config::NotionInfo;
+use crate::config::{Config, ConfigError, NotionType, Permission};
 
 mod config;
+
+#[async_trait]
+pub trait NotionTrait: Send + Sync {
+    fn get_list(&self) -> Vec<NotionInfo>;
+    async fn get_data_sources(
+        &self,
+        data_source_name_or_id: &str,
+        filter: &Value,
+    ) -> Result<Vec<Value>, NotionError>;
+    async fn get_database(&self, database_name_or_id: &str) -> Result<Value, NotionError>;
+    async fn get_page(&self, page_id: &str) -> Result<Value, NotionError>;
+    async fn add_page(&self, value: Value) -> Result<(), NotionError>;
+    async fn update_page(&self, page_id: &str, value: Value) -> Result<(), NotionError>;
+}
+
+#[cfg(feature = "test-utils")]
+pub mod mock;
 
 #[derive(Error, Debug)]
 pub enum NotionError {
@@ -39,10 +58,6 @@ impl Notion {
             token: env::var("NOTION_TOKEN").map_err(|_| NotionError::NotionTokenNotSet)?,
             config: Config::new()?,
         })
-    }
-
-    pub fn get_list(&self) -> Vec<NotionInfo> {
-        self.config.get_list()
     }
 
     async fn format_title(&self, data: &Value) -> Result<Value, NotionError> {
@@ -102,8 +117,15 @@ impl Notion {
             Ok(Value::String(title))
         }
     }
+}
 
-    pub async fn get_data_sources(
+#[async_trait]
+impl NotionTrait for Notion {
+    fn get_list(&self) -> Vec<NotionInfo> {
+        self.config.get_list()
+    }
+
+    async fn get_data_sources(
         &self,
         data_source_name_or_id: &str,
         filter: &Value,
@@ -139,7 +161,7 @@ impl Notion {
         Ok(output)
     }
 
-    pub async fn get_database(&self, database_name_or_id: &str) -> Result<Value, NotionError> {
+    async fn get_database(&self, database_name_or_id: &str) -> Result<Value, NotionError> {
         let database_id =
             self.config
                 .get_id(database_name_or_id, NotionType::Database, &Permission::Get)?;
@@ -160,7 +182,7 @@ impl Notion {
         Ok(data)
     }
 
-    pub async fn get_page(&self, page_id: &str) -> Result<Value, NotionError> {
+    async fn get_page(&self, page_id: &str) -> Result<Value, NotionError> {
         let client = reqwest::Client::new();
         let res = client
             .get(format!("https://api.notion.com/v1/pages/{page_id}",))
@@ -183,7 +205,7 @@ impl Notion {
         Ok(data)
     }
 
-    pub async fn add_page(&self, value: Value) -> Result<(), NotionError> {
+    async fn add_page(&self, value: Value) -> Result<(), NotionError> {
         if self
             .config
             .check_parent(value.clone(), &Permission::Add)
@@ -210,7 +232,7 @@ impl Notion {
         Ok(())
     }
 
-    pub async fn update_page(&self, page_id: &str, value: Value) -> Result<(), NotionError> {
+    async fn update_page(&self, page_id: &str, value: Value) -> Result<(), NotionError> {
         let page = self.get_page(page_id).await?;
 
         if self
