@@ -172,6 +172,7 @@ async fn test_get_list() {
     mock.mock_get_list(|| vec![]).await;
 
     let result = mock.get_list();
+
     assert!(result.is_empty());
 }
 
@@ -185,6 +186,7 @@ async fn test_get_page() {
     }))).await;
 
     let result = mock.get_page("any-id").await.unwrap();
+
     assert_eq!(result["id"], "test-page-id");
 }
 ```

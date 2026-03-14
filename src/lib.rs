@@ -8,6 +8,8 @@ pub use crate::config::NotionInfo;
 use crate::config::{Config, ConfigError, NotionType, Permission};
 
 mod config;
+#[cfg(feature = "test-utils")]
+pub mod mock;
 
 #[async_trait]
 pub trait NotionTrait: Send + Sync {
@@ -22,9 +24,6 @@ pub trait NotionTrait: Send + Sync {
     async fn add_page(&self, value: Value) -> Result<(), NotionError>;
     async fn update_page(&self, page_id: &str, value: Value) -> Result<(), NotionError>;
 }
-
-#[cfg(feature = "test-utils")]
-pub mod mock;
 
 #[derive(Error, Debug)]
 pub enum NotionError {
