@@ -195,7 +195,7 @@ impl NotionTrait for Notion {
         if !data["id"].is_string()
             || self
                 .config
-                .check_parent(data.clone(), &Permission::Get)
+                .get_parent_id(data.clone(), &Permission::Get)
                 .is_err()
         {
             return Err(NotionError::GetFail("Page".to_string()));
@@ -204,14 +204,10 @@ impl NotionTrait for Notion {
         Ok(data)
     }
 
-    async fn add_page(&self, value: Value) -> Result<(), NotionError> {
-        if self
-            .config
-            .check_parent(value.clone(), &Permission::Add)
-            .is_err()
-        {
-            return Err(NotionError::AddFail("Page".to_string()));
-        }
+    async fn add_page(&self, mut value: Value) -> Result<(), NotionError> {
+        let (key, parent_id) = self.config.get_parent_id(value.clone(), &Permission::Add)?;
+
+        value["parent"][key] = Value::String(parent_id);
 
         let client = reqwest::Client::new();
         let res = client
@@ -236,7 +232,7 @@ impl NotionTrait for Notion {
 
         if self
             .config
-            .check_parent(page.clone(), &Permission::Update)
+            .get_parent_id(page.clone(), &Permission::Update)
             .is_err()
         {
             return Err(NotionError::UpdateFail("Page".to_string()));

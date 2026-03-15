@@ -2,15 +2,18 @@ use std::{env, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use strum_macros::Display;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
-    #[error("NotFound")]
+    #[error("Not found")]
     NotFound,
+    #[error("Permssion denied: {0}")]
+    PermissionDenied(String),
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Display, Clone, PartialEq)]
 pub enum Permission {
     Get,
     Update,
@@ -83,32 +86,44 @@ impl Config {
                     None
                 }
             })
-            .ok_or(ConfigError::NotFound)
+            .ok_or(ConfigError::PermissionDenied(permission.to_string()))
     }
 
-    pub fn check_parent(&self, value: Value, permission: &Permission) -> Result<(), ConfigError> {
-        let parent = value["parent"].as_object().ok_or(ConfigError::NotFound)?;
+    pub fn get_parent_id(
+        &self,
+        value: Value,
+        permission: &Permission,
+    ) -> Result<(String, String), ConfigError> {
+        let parent = value["parent"]
+            .as_object()
+            .ok_or(ConfigError::PermissionDenied(
+                "parent id not found".to_string(),
+            ))?;
 
         match parent["type"].as_str() {
-            Some("data_source_id") => self
-                .get_id(
+            Some("data_source_id") => Ok((
+                "data_source_id".to_string(),
+                self.get_id(
                     parent["data_source_id"]
                         .as_str()
                         .ok_or(ConfigError::NotFound)?,
                     NotionType::DataSource,
                     permission,
-                )
-                .map(|_| ()),
-            Some("database_id") => self
-                .get_id(
+                )?,
+            )),
+            Some("database_id") => Ok((
+                "database_id".to_string(),
+                self.get_id(
                     parent["database_id"]
                         .as_str()
                         .ok_or(ConfigError::NotFound)?,
                     NotionType::Database,
                     permission,
-                )
-                .map(|_| ()),
-            _ => Err(ConfigError::NotFound),
+                )?,
+            )),
+            e => Err(ConfigError::PermissionDenied(format!(
+                "unknown parent type: {e:?}"
+            ))),
         }
     }
 }

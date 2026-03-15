@@ -108,7 +108,7 @@ let page = client.get_page("page-id").await?;
 use serde_json::json;
 
 let page_data = json!({
-    "parent": { "database_id": "your-database-id" },
+    "parent": { "database_id": "your-database-name-or-id" },
     "properties": {
         "Name": {
             "title": [{ "text": { "content": "New Page" } }]
