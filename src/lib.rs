@@ -1,10 +1,7 @@
 use async_trait::async_trait;
 use reqwest::Error as ReqwestError;
 use serde_json::Value;
-use std::{
-    env::{self, VarError},
-    os::unix::process::parent_id,
-};
+use std::env::{self, VarError};
 use thiserror::Error;
 
 pub use crate::config::NotionInfo;
