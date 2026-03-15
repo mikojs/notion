@@ -121,7 +121,9 @@ impl Config {
                     permission,
                 )?,
             )),
-            _ => Err(ConfigError::PermissionDenied(permission.to_string())),
+            e => Err(ConfigError::PermissionDenied(format!(
+                "unknown parent type: {e:?}"
+            ))),
         }
     }
 }
