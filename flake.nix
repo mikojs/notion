@@ -41,7 +41,7 @@
         };
 
       flake.overlays.default = final: prev: {
-        miko-notion = self.packages.${final.system}.miko-notion;
+        miko-notion = self.packages.${final.stdenv.hostPlatform.system}.miko-notion;
       };
     };
 }
