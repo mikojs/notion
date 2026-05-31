@@ -3,12 +3,8 @@ mod mcp {
     use notion::{Notion, NotionError, NotionTrait};
     use rmcp::{
         ErrorData as McpError, RmcpError, ServerHandler, ServiceExt,
-        handler::server::wrapper::Parameters,
-        model::*,
-        schemars::JsonSchema,
-        service::ServerInitializeError,
-        tool, tool_handler, tool_router,
-        transport::io::stdio,
+        handler::server::wrapper::Parameters, model::*, schemars::JsonSchema,
+        service::ServerInitializeError, tool, tool_handler, tool_router, transport::io::stdio,
     };
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
