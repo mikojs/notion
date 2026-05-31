@@ -3,12 +3,8 @@ mod mcp {
     use notion::{Notion, NotionError, NotionTrait};
     use rmcp::{
         ErrorData as McpError, RmcpError, ServerHandler, ServiceExt,
-        handler::server::{router::tool::ToolRouter, wrapper::Parameters},
-        model::*,
-        schemars::JsonSchema,
-        service::ServerInitializeError,
-        tool, tool_handler, tool_router,
-        transport::io::stdio,
+        handler::server::wrapper::Parameters, model::*, schemars::JsonSchema,
+        service::ServerInitializeError, tool, tool_handler, tool_router, transport::io::stdio,
     };
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
@@ -66,7 +62,6 @@ mod mcp {
     #[derive(Clone)]
     pub struct NotionServer {
         notion: Arc<Mutex<Notion>>,
-        tool_router: ToolRouter<NotionServer>,
     }
 
     #[tool_router]
@@ -74,7 +69,6 @@ mod mcp {
         pub fn new(notion: Notion) -> Self {
             Self {
                 notion: Arc::new(Mutex::new(notion)),
-                tool_router: Self::tool_router(),
             }
         }
 
