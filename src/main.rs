@@ -95,7 +95,10 @@ mod mcp {
             &self,
             Parameters(params): Parameters<GetDataSourcesParams>,
         ) -> Result<CallToolResult, McpError> {
-            let filter = params.filter.unwrap_or(serde_json::json!({}));
+            let filter = params
+                .filter
+                .map(parse_value)
+                .unwrap_or_else(|| serde_json::json!({}));
             let notion = self.notion.lock().await;
 
             match notion
