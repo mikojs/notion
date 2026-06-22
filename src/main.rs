@@ -59,6 +59,15 @@ mod mcp {
         pub value: Value,
     }
 
+    /// Normalizes a Value that may have been encoded as a JSON string by the MCP client.
+    /// Claude Code sometimes passes JSON objects as serialized strings; this unwraps them.
+    fn parse_value(value: Value) -> Value {
+        match value {
+            Value::String(s) => serde_json::from_str(&s).unwrap_or(Value::String(s)),
+            other => other,
+        }
+    }
+
     #[derive(Clone)]
     pub struct NotionServer {
         notion: Arc<Mutex<Notion>>,
@@ -132,8 +141,9 @@ mod mcp {
             Parameters(params): Parameters<AddPageParams>,
         ) -> Result<CallToolResult, McpError> {
             let notion = self.notion.lock().await;
+            let value = parse_value(params.value);
 
-            match notion.add_page(params.value).await {
+            match notion.add_page(value).await {
                 Ok(()) => Ok(CallToolResult::success(vec![Content::text(
                     "Page created successfully",
                 )])),
@@ -147,8 +157,9 @@ mod mcp {
             Parameters(params): Parameters<UpdatePageParams>,
         ) -> Result<CallToolResult, McpError> {
             let notion = self.notion.lock().await;
+            let value = parse_value(params.value);
 
-            match notion.update_page(&params.page_id, params.value).await {
+            match notion.update_page(&params.page_id, value).await {
                 Ok(()) => Ok(CallToolResult::success(vec![Content::text(
                     "Page updated successfully",
                 )])),
