@@ -100,7 +100,7 @@ impl Config {
                 "parent id not found".to_string(),
             ))?;
 
-        match parent["type"].as_str() {
+        match parent.get("type").and_then(|v| v.as_str()) {
             Some("data_source_id") => Ok((
                 "data_source_id".to_string(),
                 self.get_id(
@@ -122,7 +122,7 @@ impl Config {
                 )?,
             )),
             e => Err(ConfigError::PermissionDenied(format!(
-                "unknown parent type: {e:?}"
+                "unknown parent type: {e:?}. parent must contain a 'type' field with value 'database_id' or 'data_source_id' (e.g. {{\"type\": \"database_id\", \"database_id\": \"<id>\"}})"
             ))),
         }
     }
