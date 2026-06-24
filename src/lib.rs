@@ -221,7 +221,12 @@ impl NotionTrait for Notion {
         let data = res.json::<Value>().await?;
 
         if !data["id"].is_string() {
-            return Err(NotionError::AddFail("Page".to_string()));
+            return Err(NotionError::AddFail(
+                data["message"]
+                    .as_str()
+                    .unwrap_or(&data.to_string())
+                    .to_string(),
+            ));
         }
 
         Ok(())
